@@ -1,0 +1,8 @@
+torch
+mmcv-full
+mmdet
+mmrotate
+numpy
+matplotlib
+seaborn
+setuptools
