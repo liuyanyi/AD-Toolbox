@@ -16,11 +16,11 @@ from mmcv.utils import get_git_hash
 from mmdet import __version__
 from mmdet.apis import init_random_seed, set_random_seed
 
-from mmrotate.datasets import build_dataset
+from mmdet.datasets import build_dataset
 from mmrotate.models import build_detector
 from mmrotate.utils import setup_multi_processes
 
-import adtoolbox
+import adtoolbox  # noqa
 from adtoolbox.api import train_detector
 from adtoolbox.utils import get_root_logger, collect_env
 

@@ -1,8 +1,10 @@
 torch
 mmcv-full
-mmdet
-mmrotate
+mmdet>=2.24.1
+mmrotate>=0.2.0
 numpy
 matplotlib
 seaborn
 setuptools
+terminaltables
+opencv-python

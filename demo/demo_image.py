@@ -5,8 +5,8 @@ from argparse import ArgumentParser
 from mmdet.apis import (async_inference_detector, inference_detector,
                         init_detector, show_result_pyplot)
 
-import mmrotate
-import adtoolbox
+import mmrotate  # noqa
+import adtoolbox  # noqa
 
 
 def parse_args():
@@ -19,7 +19,7 @@ def parse_args():
         '--device', default='cuda:0', help='Device used for inference')
     parser.add_argument(
         '--palette',
-        default='coco',
+        default='random',
         help='Color palette used for visualization')
     parser.add_argument(
         '--score-thr', type=float, default=0.3, help='bbox score threshold')

@@ -1,3 +1,4 @@
-from .custom_tb_hook import ADTensorboardLoggerHook
+from .ad_tensorboard import ADTensorboardLoggerHook
+from .ad_wandb import ADWandbLoggerHook
 
-__all__ = ['ADTensorboardLoggerHook']
+__all__ = ['ADTensorboardLoggerHook', 'ADWandbLoggerHook']
