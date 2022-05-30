@@ -18,7 +18,7 @@ model = dict(
         num_csp_blocks=1),
     bbox_head=dict(
         type='RotatedYOLOXHead',
-        num_classes=15,
+        num_classes=20,
         in_channels=128,
         feat_channels=128,
         seprate_angle=True,
@@ -50,8 +50,8 @@ model = dict(
     test_cfg=dict(score_thr=0.01, nms=dict(type='nms_rotated', iou_threshold=0.10)))
 
 # dataset settings
-dataset_type = 'DOTADataset'
-data_root = '/datasets/Dota_mmrotate/dota/'
+dataset_type = 'MAR20Dataset'
+data_root = '/datasets/MAR20/'
 
 train_pipeline = [
     dict(type='RMosaic',
@@ -97,12 +97,14 @@ train_dataset = dict(
     type='MultiImageMixDataset',
     dataset=dict(
         type=dataset_type,
-        ann_file=data_root + 'trainval/annfiles/',
-        img_prefix=data_root + 'trainval/images/',
+        bbox_type='obb',
+        ann_file=data_root + 'ImageSets/Main/train.txt',
+        ann_subdir=data_root + 'Annotations/Oriented Bounding Boxes/',
+        img_subdir=data_root + 'JPEGImages/',
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True),
-            dict(type='OBB2Poly', angle_version=angle_version),
+            dict(type='OBB2Poly', angle_version='le90')
         ],
         filter_empty_gt=False,
     ),
@@ -132,13 +134,17 @@ data = dict(
     train=train_dataset,
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'trainval/annfiles/',
-        img_prefix=data_root + 'trainval/images/',
+        bbox_type='obb',
+        ann_file=data_root + 'ImageSets/Main/test.txt',
+        ann_subdir=data_root + 'Annotations/Oriented Bounding Boxes/',
+        img_subdir=data_root + 'JPEGImages/',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'test/images/',
-        img_prefix=data_root + 'test/images/',
+        bbox_type='obb',
+        ann_file=data_root + 'ImageSets/Main/test.txt',
+        ann_subdir=data_root + 'Annotations/Oriented Bounding Boxes',
+        img_subdir=data_root + 'JPEGImages/',
         pipeline=test_pipeline))
 # optimizer
 # default 8 gpu
@@ -153,8 +159,7 @@ optimizer_config = dict(grad_clip=None)
 
 max_epochs = 300
 num_last_epochs = 15
-# load_from = '/workspace/toolbox/work_dirs/yolox_s_8x8_300e_coco_20211121_095711-4592a793.pth'  # 从一个给定路径里加载模型作为预训练模型，它并不会消耗训练时间。
-load_from = None
+load_from = '/workspace/toolbox/work_dirs/yolox_s_8x8_300e_coco_20211121_095711-4592a793.pth'  # 从一个给定路径里加载模型作为预训练模型，它并不会消耗训练时间。
 resume_from = None
 interval = 10
 
@@ -197,6 +202,6 @@ evaluation = dict(
     # The evaluation interval is 1 when running epoch is greater than
     # or equal to ‘max_epochs - num_last_epochs’.
     interval=interval,
-    dynamic_intervals=[(max_epochs - num_last_epochs, 1)],
+    dynamic_intervals=[(max_epochs - num_last_epochs, 10)],
     metric='mAP')
 log_config = dict(interval=50)
