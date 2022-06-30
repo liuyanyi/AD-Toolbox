@@ -34,11 +34,11 @@ data = dict(
     train=dict(
         type=dataset_type,
         bbox_type='hbb',
+        min_size=5,
         ann_file=[data_root + 'ImageSets/Main/train.txt', data_root + 'ImageSets/Main/val.txt'],
         ann_subdir=data_root + 'Annotations/Horizontal Bounding Boxes/',
         img_subdir=data_root + 'JPEGImages-trainval/',
         pipeline=train_pipeline),
-
     val=dict(
         type=dataset_type,
         bbox_type='hbb',
