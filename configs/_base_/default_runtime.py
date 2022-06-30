@@ -7,7 +7,7 @@ log_config = dict(
         # dict(
         #     type='ADWandbLoggerHook',
         #     init_kwargs=dict(
-        #         project='mar20_exp',
+        #         project='dota_exp',
         #         entity='liuyanyi',
         #     )
         # )

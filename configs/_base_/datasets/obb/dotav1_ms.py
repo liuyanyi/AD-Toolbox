@@ -1,6 +1,6 @@
 # dataset settings
 dataset_type = 'DOTADataset'
-data_root = '/datasets/dota_mmrotate_ss/'
+data_root = '/home/wangchen/liuyanyi/datasets/dota_ms/'
 img_norm_cfg = dict(
     mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
@@ -45,5 +45,5 @@ data = dict(
         ann_file=data_root + 'test/images/',
         img_prefix=data_root + 'test/images/',
         pipeline=test_pipeline),
-    test_dataloader=dict(samples_per_gpu=4, workers_per_gpu=4),
+    test_dataloader=dict(samples_per_gpu=8, workers_per_gpu=8),
 )

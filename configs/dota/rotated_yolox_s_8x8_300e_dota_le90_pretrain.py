@@ -51,7 +51,7 @@ model = dict(
 
 # dataset settings
 dataset_type = 'DOTADataset'
-data_root = '/home/wangchen/liuyanyi/datasets/dota/'
+data_root = '/datasets/dota_mmrotate_ss/'
 
 train_pipeline = [
     dict(type='RMosaic',
@@ -153,9 +153,8 @@ optimizer_config = dict(grad_clip=None)
 
 max_epochs = 300
 num_last_epochs = 15
-# load_from = '/workspace/toolbox/work_dirs/yolox_s_8x8_300e_coco_20211121_095711-4592a793.pth'  # 从一个给定路径里加载模型作为预训练模型，它并不会消耗训练时间。
-load_from = None
-resume_from = '/home/wangchen/liuyanyi/toolbox/work_dirs/dota_yolox/latest.pth'
+load_from = '/workspace/toolbox/work_dirs/yolox_s_8x8_300e_coco_20211121_095711-4592a793.pth'  # 从一个给定路径里加载模型作为预训练模型，它并不会消耗训练时间。
+resume_from = None
 interval = 10
 
 # learning policy

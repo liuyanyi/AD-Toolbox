@@ -190,3 +190,31 @@ class RSimOTAAssigner(SimOTAAssigner):
                 is_in_gts[is_in_gts_or_centers, :]
                 & is_in_cts[is_in_gts_or_centers, :])
         return is_in_gts_or_centers, is_in_boxes_and_centers
+
+    def points_in_rbboxes_wrapper(self, points, rbboxes, angle_version):
+        if points.device == 'cuda':
+            polygons = obb2poly(rbboxes, angle_version)
+            return points_in_polygons(points, polygons)
+        else:
+            num_gt = rbboxes.size(0)
+            num_prior = points.size(0)
+            points = points[:, None, :].expand(num_prior, num_gt, 2)
+            rbboxes = rbboxes[None].expand(num_prior, num_gt, 5)
+            # is prior centers in gt
+            ctr, wh, angle = torch.split(rbboxes, [2, 2, 1], dim=2)
+
+            cos_angle, sin_angle = torch.cos(angle), torch.sin(angle)
+            rot_matrix = torch.cat([cos_angle, sin_angle, -sin_angle, cos_angle],
+                                   dim=-1).reshape(num_prior, num_gt, 2, 2)
+            offset = points - ctr
+            offset = torch.matmul(rot_matrix, offset[..., None])
+            offset = offset.squeeze(-1)
+
+            w, h = wh[..., 0], wh[..., 1]
+            offset_x, offset_y = offset[..., 0], offset[..., 1]
+            left = w / 2 + offset_x
+            right = w / 2 - offset_x
+            top = h / 2 + offset_y
+            bottom = h / 2 - offset_y
+            deltas = torch.stack((left, top, right, bottom), dim=1)
+            return deltas.min(dim=1).values

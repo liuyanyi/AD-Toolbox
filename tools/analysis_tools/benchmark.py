@@ -14,6 +14,8 @@ from mmdet.datasets import build_dataloader, replace_ImageToTensor
 from mmrotate.datasets import build_dataset
 from mmrotate.models import build_detector
 
+import adtoolbox  # noqa
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='mmrotate benchmark a model')
