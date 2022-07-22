@@ -23,7 +23,7 @@ English | [简体中文](README_zh-CN.md)
 
 ## Models
 
-- Rotated YOLOX (Still under tuning)
+- Rotated YOLOX (Will be merged into MMRotate! Pr is in progress https://github.com/open-mmlab/mmrotate/pull/409)
 - Models in MMdetection and MMRotate.
 
 ## Dependencies
