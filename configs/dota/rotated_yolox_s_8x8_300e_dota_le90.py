@@ -47,31 +47,28 @@ model = dict(
     train_cfg=dict(assigner=dict(type='RSimOTAAssigner', center_radius=2.5)),
     # In order to align the source code, the threshold of the val phase is
     # 0.01, and the threshold of the test phase is 0.001.
-    test_cfg=dict(score_thr=0.01, nms=dict(type='nms_rotated', iou_threshold=0.10)))
+    test_cfg=dict(
+        score_thr=0.01, nms=dict(type='nms_rotated', iou_threshold=0.10)))
 
 # dataset settings
 dataset_type = 'DOTADataset'
 data_root = '/home/wangchen/liuyanyi/datasets/dota/'
 
 train_pipeline = [
-    dict(type='RMosaic',
-         angle_version=angle_version,
-         img_scale=img_scale,
-         bbox_clip_border=True,
-         pad_val=114.0),
+    dict(type='RMosaic', img_scale=img_scale, pad_val=114.0),
     dict(
-        type='RRandomAffine',
-        angle_version=angle_version,
+        type='PolyRandomAffine',
+        version=angle_version,
         scaling_ratio_range=(0.1, 2),
-        bbox_clip_border=True,
+        bbox_clip_border=False,
         border=(-img_scale[0] // 2, -img_scale[1] // 2)),
     dict(
-        type='RMixUp',
+        type='PolyMixUp',
+        version=angle_version,
+        bbox_clip_border=False,
         img_scale=img_scale,
         ratio_range=(0.8, 1.6),
-        bbox_clip_border=True,
         pad_val=114.0),
-    dict(type='Poly2OBB', angle_version='le90'),
     dict(type='YOLOXHSVRandomAug'),
     dict(
         type='RRandomFlip',
@@ -80,7 +77,7 @@ train_pipeline = [
         version=angle_version),
     # According to the official implementation, multi-scale
     # training is not considered here but in the
-    # 'mmdet/models/detectors/yolox.py'.
+    # 'mmrotate/models/detectors/rotated_yolox.py.'
     dict(type='RResize', img_scale=img_scale),
     dict(
         type='Pad',
@@ -88,23 +85,25 @@ train_pipeline = [
         # If the image is three-channel, the pad value needs
         # to be set separately for each channel.
         pad_val=dict(img=(114.0, 114.0, 114.0))),
-    dict(type='FilterRotatedAnnotations', min_gt_bbox_wh=(1, 1), keep_empty=False),
+    dict(
+        type='FilterRotatedAnnotations',
+        min_gt_bbox_wh=(1, 1),
+        keep_empty=False),
     dict(type='DefaultFormatBundle'),
     dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
 ]
-
 train_dataset = dict(
     type='MultiImageMixDataset',
     dataset=dict(
         type=dataset_type,
+        version=angle_version,
         ann_file=data_root + 'trainval/annfiles/',
         img_prefix=data_root + 'trainval/images/',
         pipeline=[
             dict(type='LoadImageFromFile'),
             dict(type='LoadAnnotations', with_bbox=True),
-            dict(type='OBB2Poly', angle_version=angle_version),
         ],
-        filter_empty_gt=True,
+        filter_empty_gt=False,
     ),
     pipeline=train_pipeline)
 
@@ -153,7 +152,6 @@ optimizer_config = dict(grad_clip=None)
 
 max_epochs = 300
 num_last_epochs = 15
-# load_from = '/workspace/toolbox/work_dirs/yolox_s_8x8_300e_coco_20211121_095711-4592a793.pth'  # 从一个给定路径里加载模型作为预训练模型，它并不会消耗训练时间。
 load_from = None
 resume_from = '/home/wangchen/liuyanyi/toolbox/work_dirs/dota_yolox/latest.pth'
 interval = 10
@@ -176,7 +174,7 @@ custom_hooks = [
     dict(
         type='YOLOXModeSwitchHook',
         num_last_epochs=num_last_epochs,
-        skip_type_keys=('RMosaic', 'RRandomAffine', 'RMixUp'),
+        skip_type_keys=('RMosaic', 'PolyRandomAffine', 'PolyMixUp'),
         priority=48),
     dict(
         type='SyncNormHook',

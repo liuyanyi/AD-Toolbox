@@ -9,9 +9,9 @@ English | [简体中文](README_zh-CN.md)
 ## Supported Datasets
 
 |                        Dataset                        | HBB Det | OBB Det | Instance Segm |
-|:-----------------------------------------------------:|:-------:|:-------:|:-------------:|
-| [DOTA](https://captain-whu.github.io/DOTA/index.html) |    ×    |   ✓ *   |       -       |
-|                     [HRSC2016]()                      |    ×    |   ✓ *   |       -       |
+| :---------------------------------------------------: | :-----: | :-----: | :-----------: |
+| [DOTA](https://captain-whu.github.io/DOTA/index.html) |    ×    |  ✓ \*   |       -       |
+|                    [HRSC2016](<>)                     |    ×    |  ✓ \*   |       -       |
 |    [DIOR](https://gcheng-nwpu.github.io/#Datasets)    |    ✓    |    ✓    |       -       |
 |   [VHR-10](https://gcheng-nwpu.github.io/#Datasets)   |    ✓    |    ×    |       ✓       |
 |   [MAR20](https://gcheng-nwpu.github.io/#Datasets)    |    ✓    |    ✓    |       -       |
@@ -20,6 +20,11 @@ English | [简体中文](README_zh-CN.md)
 
 - `*` : `DOTA` and `HRSC2016` are officially support by MMRotate.
 - All configs still need test and benchmark.
+
+## Install
+
+Please use the mmrotate in https://github.com/liuyanyi/mmrotate/tree/ryolox
+before yolox merged into master.
 
 ## Models
 
@@ -31,4 +36,3 @@ English | [简体中文](README_zh-CN.md)
 - [MMCV-Full](https://github.com/open-mmlab/mmcv)
 - [MMDetection](https://github.com/open-mmlab/mmdetection)
 - [MMRotate](https://github.com/open-mmlab/mmrotate)
-
