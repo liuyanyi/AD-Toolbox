@@ -1,17 +1,18 @@
-# Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import os
 
 import matplotlib.pyplot as plt
-import mmcv
 import numpy as np
-import torch
 from matplotlib.ticker import MultipleLocator
-from mmcv import Config, DictAction
-from mmcv.ops import nms_rotated
-from mmdet.datasets import build_dataset
-
-from mmrotate.core.bbox import rbbox_overlaps
+from mmcv.ops import nms
+# TODO
+from mmdet.evaluation import bbox_overlaps
+from mmdet.registry import DATASETS
+from mmdet.utils import (register_all_modules, replace_cfg_vals,
+                         update_data_root)
+from mmengine import Config, DictAction
+from mmengine.fileio import load
+from mmengine.utils import ProgressBar
 
 
 def parse_args():
@@ -43,17 +44,17 @@ def parse_args():
         type=float,
         default=None,
         help='nms IoU threshold, only applied when users want to change the'
-             'nms IoU threshold.')
+        'nms IoU threshold.')
     parser.add_argument(
         '--cfg-options',
         nargs='+',
         action=DictAction,
         help='override some settings in the used config, the key-value pair '
-             'in xxx=yyy format will be merged into config file. If the value to '
-             'be overwritten is a list, it should be like key="[a,b]" or key=a,b '
-             'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
-             'Note that the quotation marks are necessary and that no white space '
-             'is allowed.')
+        'in xxx=yyy format will be merged into config file. If the value to '
+        'be overwritten is a list, it should be like key="[a,b]" or key=a,b '
+        'It also allows nested list/tuple values, e.g. key="[(a,b),(c,d)]" '
+        'Note that the quotation marks are necessary and that no white space '
+        'is allowed.')
     args = parser.parse_args()
     return args
 
@@ -76,27 +77,21 @@ def calculate_confusion_matrix(dataset,
         tp_iou_thr (float|optional): IoU threshold to be considered as matched.
             Default: 0.5.
     """
-    num_classes = len(dataset.CLASSES)
+    num_classes = len(dataset.metainfo['classes'])
     confusion_matrix = np.zeros(shape=[num_classes + 1, num_classes + 1])
     assert len(dataset) == len(results)
-    prog_bar = mmcv.ProgressBar(len(results))
+    prog_bar = ProgressBar(len(results))
     for idx, per_img_res in enumerate(results):
-        if isinstance(per_img_res, tuple):
-            res_bboxes, _ = per_img_res
-        else:
-            res_bboxes = per_img_res
-        ann = dataset.get_ann_info(idx)
-        gt_bboxes = ann['bboxes']
-        labels = ann['labels']
-        analyze_per_img_dets(confusion_matrix, gt_bboxes, labels, res_bboxes,
-                             score_thr, tp_iou_thr, nms_iou_thr)
+        res_bboxes = per_img_res['pred_instances']
+        gts = dataset.get_data_info(idx)['instances']
+        analyze_per_img_dets(confusion_matrix, gts, res_bboxes, score_thr,
+                             tp_iou_thr, nms_iou_thr)
         prog_bar.update()
     return confusion_matrix
 
 
 def analyze_per_img_dets(confusion_matrix,
-                         gt_bboxes,
-                         gt_labels,
+                         gts,
                          result,
                          score_thr=0,
                          tp_iou_thr=0.5,
@@ -118,19 +113,28 @@ def analyze_per_img_dets(confusion_matrix,
             have done nms in the detector, only applied when users want to
             change the nms IoU threshold. Default: None.
     """
-    true_positives = np.zeros_like(gt_labels)
-    gt_bboxes = torch.from_numpy(gt_bboxes).float()
-    for det_label, det_bboxes in enumerate(result):
-        det_bboxes = torch.from_numpy(det_bboxes).float()
+    true_positives = np.zeros(len(gts))
+    gt_bboxes = []
+    gt_labels = []
+    for gt in gts:
+        gt_bboxes.append(gt['bbox'])
+        gt_labels.append(gt['bbox_label'])
+
+    gt_bboxes = np.array(gt_bboxes)
+    gt_labels = np.array(gt_labels)
+
+    unique_label = np.unique(result['labels'].numpy())
+
+    for det_label in unique_label:
+        mask = (result['labels'] == det_label)
+        det_bboxes = result['bboxes'][mask].numpy()
+        det_scores = result['scores'][mask].numpy()
+
         if nms_iou_thr:
-            det_bboxes, _ = nms_rotated(
-                det_bboxes[:, :5],
-                det_bboxes[:, -1],
-                nms_iou_thr,
-                score_threshold=score_thr)
-        ious = rbbox_overlaps(det_bboxes[:, :5], gt_bboxes)
-        for i, det_bbox in enumerate(det_bboxes):
-            score = det_bbox[5]
+            det_bboxes, _ = nms(
+                det_bboxes, det_scores, nms_iou_thr, score_threshold=score_thr)
+        ious = bbox_overlaps(det_bboxes[:, :4], gt_bboxes)
+        for i, score in enumerate(det_scores):
             det_match = 0
             if score >= score_thr:
                 for j, gt_label in enumerate(gt_labels):
@@ -213,8 +217,8 @@ def plot_confusion_matrix(confusion_matrix,
                 i,
                 '{}%'.format(
                     int(confusion_matrix[
-                            i,
-                            j]) if not np.isnan(confusion_matrix[i, j]) else -1),
+                        i,
+                        j]) if not np.isnan(confusion_matrix[i, j]) else -1),
                 ha='center',
                 va='center',
                 color='w',
@@ -231,27 +235,26 @@ def plot_confusion_matrix(confusion_matrix,
 
 
 def main():
+    register_all_modules()
     args = parse_args()
 
     cfg = Config.fromfile(args.config)
+
+    # replace the ${key} with the value of cfg.key
+    cfg = replace_cfg_vals(cfg)
+
+    # update data root according to MMDET_DATASETS
+    update_data_root(cfg)
+
     if args.cfg_options is not None:
         cfg.merge_from_dict(args.cfg_options)
 
-    results = mmcv.load(args.prediction_path)
-    assert isinstance(results, list)
-    if isinstance(results[0], list):
-        pass
-    elif isinstance(results[0], tuple):
-        results = [result[0] for result in results]
-    else:
-        raise TypeError('invalid type of prediction results')
+    results = load(args.prediction_path)
 
-    if isinstance(cfg.data.test, dict):
-        cfg.data.test.test_mode = True
-    elif isinstance(cfg.data.test, list):
-        for ds_cfg in cfg.data.test:
-            ds_cfg.test_mode = True
-    dataset = build_dataset(cfg.data.test)
+    if not os.path.exists(args.save_dir):
+        os.makedirs(args.save_dir)
+
+    dataset = DATASETS.build(cfg.test_dataloader.dataset)
 
     confusion_matrix = calculate_confusion_matrix(dataset, results,
                                                   args.score_thr,
@@ -259,9 +262,10 @@ def main():
                                                   args.tp_iou_thr)
     plot_confusion_matrix(
         confusion_matrix,
-        dataset.CLASSES + ('background',),
+        dataset.metainfo['classes'] + ('background', ),
         save_dir=args.save_dir,
-        show=args.show)
+        show=args.show,
+        color_theme=args.color_theme)
 
 
 if __name__ == '__main__':

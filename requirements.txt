@@ -1,5 +1,4 @@
 matplotlib
-mmcv-full
 mmdet
 mmrotate
 numpy

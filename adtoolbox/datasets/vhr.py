@@ -1,5 +1,6 @@
 from mmdet.datasets import CocoDataset
-from mmdet.datasets.builder import DATASETS
+
+from adtoolbox.registry import DATASETS
 
 
 @DATASETS.register_module()
