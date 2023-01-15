@@ -1,54 +1,83 @@
 # dataset settings
-dataset_type = 'MAR20Dataset'
+dataset_type = 'adtoolbox.MAR20Dataset'
 data_root = '/datasets/MAR20/'
-img_norm_cfg = dict(
-    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+ann_type = 'obb'
+file_client_args = dict(backend='disk')
+
 train_pipeline = [
-    dict(type='LoadImageFromFile'),
-    dict(type='LoadAnnotations', with_bbox=True),
-    dict(type='RResize', img_scale=(800, 800)),
-    dict(type='RRandomFlip', flip_ratio=0.5),
-    dict(type='Normalize', **img_norm_cfg),
-    dict(type='Pad', size_divisor=32),
-    dict(type='DefaultFormatBundle'),
-    dict(type='Collect', keys=['img', 'gt_bboxes', 'gt_labels'])
+    dict(type='mmdet.LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='mmdet.LoadAnnotations', with_bbox=True, box_type='qbox'),
+    dict(type='ConvertBoxType', box_type_mapping=dict(gt_bboxes='rbox')),
+    dict(type='mmdet.Resize', scale=(800, 800), keep_ratio=True),
+    dict(
+        type='mmdet.RandomFlip',
+        prob=0.75,
+        direction=['horizontal', 'vertical', 'diagonal']),
+    dict(type='mmdet.PackDetInputs')
+]
+val_pipeline = [
+    dict(type='mmdet.LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='mmdet.Resize', scale=(800, 800), keep_ratio=True),
+    # avoid bboxes being resized
+    dict(type='mmdet.LoadAnnotations', with_bbox=True, box_type='qbox'),
+    dict(type='ConvertBoxType', box_type_mapping=dict(gt_bboxes='rbox')),
+    dict(
+        type='mmdet.PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
 ]
 test_pipeline = [
-    dict(type='LoadImageFromFile'),
+    dict(type='mmdet.LoadImageFromFile', file_client_args=file_client_args),
+    dict(type='mmdet.Resize', scale=(800, 800), keep_ratio=True),
     dict(
-        type='MultiScaleFlipAug',
-        img_scale=(800, 800),
-        flip=False,
-        transforms=[
-            dict(type='RResize'),
-            dict(type='Normalize', **img_norm_cfg),
-            dict(type='Pad', size_divisor=32),
-            dict(type='DefaultFormatBundle'),
-            dict(type='Collect', keys=['img'])
-        ])
+        type='mmdet.PackDetInputs',
+        meta_keys=('img_id', 'img_path', 'ori_shape', 'img_shape',
+                   'scale_factor'))
 ]
-data = dict(
-    samples_per_gpu=2,
-    workers_per_gpu=4,
-    train=dict(
+train_dataloader = dict(
+    batch_size=2,
+    num_workers=2,
+    persistent_workers=True,
+    sampler=dict(type='DefaultSampler', shuffle=True),
+    batch_sampler=None,
+    dataset=dict(
+        type='ConcatDataset',
+        ignore_keys=['DATASET_TYPE'],
+        datasets=[
+            dict(
+                type=dataset_type,
+                data_root=data_root,
+                ann_type=ann_type,
+                ann_file='ImageSets/Main/train.txt',
+                ann_subdir='Annotations/Oriented Bounding Boxes/',
+                data_prefix=dict(img_path='JPEGImages/'),
+                filter_cfg=dict(filter_empty_gt=True),
+                pipeline=train_pipeline),
+            dict(
+                type=dataset_type,
+                data_root=data_root,
+                ann_type=ann_type,
+                ann_file='ImageSets/Main/val.txt',
+                ann_subdir='Annotations/Oriented Bounding Boxes/',
+                data_prefix=dict(img_path='JPEGImages/'),
+                filter_cfg=dict(filter_empty_gt=True),
+                pipeline=train_pipeline)
+        ]))
+val_dataloader = dict(
+    batch_size=1,
+    num_workers=2,
+    persistent_workers=True,
+    drop_last=False,
+    sampler=dict(type='DefaultSampler', shuffle=False),
+    dataset=dict(
         type=dataset_type,
-        bbox_type='obb',
-        ann_file=data_root + 'ImageSets/Main/train.txt',
-        ann_subdir=data_root + 'Annotations/Oriented Bounding Boxes/',
-        img_subdir=data_root + 'JPEGImages/',
-        pipeline=train_pipeline),
-    val=dict(
-        type=dataset_type,
-        bbox_type='obb',
-        ann_file=data_root + 'ImageSets/Main/test.txt',
-        ann_subdir=data_root + 'Annotations/Oriented Bounding Boxes/',
-        img_subdir=data_root + 'JPEGImages/',
-        pipeline=test_pipeline),
-    test=dict(
-        type=dataset_type,
-        bbox_type='obb',
-        ann_file=data_root + 'ImageSets/Main/test.txt',
-        ann_subdir=data_root + 'Annotations/Oriented Bounding Boxes/',
-        img_subdir=data_root + 'JPEGImages/',
-        pipeline=test_pipeline))
-evaluation = dict(metric='mAP', interval=2)
+        data_root=data_root,
+        ann_file='ImageSets/Main/test.txt',
+        ann_subdir='Annotations/Oriented Bounding Boxes/',
+        data_prefix=dict(img_path='JPEGImages/'),
+        test_mode=True,
+        pipeline=val_pipeline))
+test_dataloader = val_dataloader
+
+val_evaluator = dict(type='DOTAMetric', metric='mAP')
+test_evaluator = val_evaluator

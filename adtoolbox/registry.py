@@ -16,7 +16,7 @@ from mmengine.registry import Registry
 DATASETS = Registry(
     'dataset',
     parent=MMENGINE_DATASETS,
-    scope='ad',
+    scope='adtoolbox',
     locations=['adtoolbox.datasets'])
 # TRANSFORMS = Registry(
 #     'transform',
@@ -28,12 +28,12 @@ DATASETS = Registry(
 MODELS = Registry(
     'model',
     parent=MMENGINE_MODELS,
-    scope='ad',
+    scope='adtoolbox',
     locations=['adtoolbox.models'])
 
 # manage task-specific modules like anchor generators and box coders
 TASK_UTILS = Registry(
     'task util',
     parent=MMENGINE_TASK_UTILS,
-    scope='ad',
+    scope='adtoolbox',
     locations=['adtoolbox.models'])
