@@ -2,7 +2,7 @@
 
 Aerial Detection Toolbox based on OpenMMLab 2.0.
 
-Mainly for my own convenience, no need to modify code in mmdet and mmrotate.
+Mainly for my own convenience, thanks to MMEngine, we can use the cross-library modules easily.
 
 English | [简体中文](README_zh-CN.md)
 
