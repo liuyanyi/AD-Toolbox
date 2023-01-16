@@ -15,6 +15,7 @@ English | [简体中文](README_zh-CN.md)
 
 ## Dependencies
 
+- [MMEngine](https://github.com/open-mmlab/mmengine)
 - [MMCV](https://github.com/open-mmlab/mmcv)
 - [MMDetection](https://github.com/open-mmlab/mmdetection)
 - [MMRotate](https://github.com/open-mmlab/mmrotate)

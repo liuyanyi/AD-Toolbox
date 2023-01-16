@@ -1,6 +1,7 @@
 matplotlib
-mmdet
-mmrotate
+mmcv>=2.0.0rc3
+mmdet>=3.0.0rc5
+mmrotate>=1.0.0rc1
 numpy
 opencv-python
 setuptools
